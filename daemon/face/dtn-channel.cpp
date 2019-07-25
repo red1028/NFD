@@ -49,12 +49,13 @@ DtnChannel::DtnChannel(const std::string &endpointPrefix,
   m_is_open = false;
   m_pIbrDtnClient = nullptr;
   setUri(FaceUri(m_endpointPrefix, m_endpointAffix));
+  NFD_LOG_CHAN_INFO("Creating dtn channel");
 }
 
 DtnChannel::~DtnChannel()
 {
   if (isListening()) {
-    NFD_LOG_DEBUG(" Removing dtn socket");
+    NFD_LOG_CHAN_DEBUG(" Removing dtn socket");
     if (m_pIbrDtnClient != nullptr)
     	delete m_pIbrDtnClient;
 
@@ -68,7 +69,7 @@ DtnChannel::listen(const FaceCreatedCallback& onFaceCreated,
                    //int backlog/* = acceptor::max_connections*/)
 {
   if (isListening()) {
-    NFD_LOG_WARN("[" << m_endpointAffix << "] Already listening");
+    NFD_LOG_CHAN_WARN("[" << m_endpointAffix << "] Already listening");
     return;
   }
   m_is_open = true;
@@ -87,8 +88,8 @@ DtnChannel::processBundle(dtn::data::Bundle b)
   // Do bundle processing
   std::string remoteEndpoint = b.source.getString();
 
-  NFD_LOG_INFO("DTN bundle received from " << remoteEndpoint);
-  NFD_LOG_DEBUG("[" << m_endpointAffix << "] New peer " << remoteEndpoint);
+  NFD_LOG_CHAN_INFO("DTN bundle received from " << remoteEndpoint);
+  NFD_LOG_CHAN_DEBUG("[" << m_endpointAffix << "] New peer " << remoteEndpoint);
 
   bool isCreated = false;
   shared_ptr<Face> face = nullptr;
@@ -97,7 +98,7 @@ DtnChannel::processBundle(dtn::data::Bundle b)
 
   if (face == nullptr)
   {
-    NFD_LOG_WARN("[" << m_endpointAffix << "] Failed to create face for peer " << remoteEndpoint);
+    NFD_LOG_CHAN_WARN("[" << m_endpointAffix << "] Failed to create face for peer " << remoteEndpoint);
     if (m_onReceiveFailed)
 	  m_onReceiveFailed(500, "Accept failed: " + remoteEndpoint);
     return;
@@ -120,7 +121,7 @@ DtnChannel::connect(const std::string &remoteEndpoint,
   face = createFace(remoteEndpoint, params.persistency).second;
   if (face == nullptr)
   {
-    NFD_LOG_WARN("[" << m_endpointAffix << "] Connect failed");
+    NFD_LOG_CHAN_WARN("[" << m_endpointAffix << "] Connect failed");
     if (onConnectFailed)
       onConnectFailed(504, "Connection failed: " + remoteEndpoint);
     return;
@@ -163,7 +164,7 @@ DtnChannel::createFace(const std::string& remoteEndpoint, ndn::nfd::FacePersiste
   m_channelFaces[remoteEndpoint] = face;
   connectFaceClosedSignal(*face,
     [this, remoteEndpoint] {
-      NFD_LOG_TRACE("Erasing " << remoteEndpoint << " from channel face map");
+      NFD_LOG_CHAN_TRACE("Erasing " << remoteEndpoint << " from channel face map");
       m_channelFaces.erase(remoteEndpoint);
     });
 
@@ -188,13 +189,13 @@ DtnChannel::handleAccept(const boost::system::error_code& error,
     if (error == boost::asio::error::operation_aborted) // when the socket is closed by someone
       return;
 
-    NFD_LOG_DEBUG("[] Accept failed: " << error.message());
+    NFD_LOG_CHAN_DEBUG("[] Accept failed: " << error.message());
     if (onAcceptFailed)
       onAcceptFailed(500, "Accept failed: " + error.message());
     return;
   }
 
-  NFD_LOG_DEBUG("[] Incoming connection");
+  NFD_LOG_CHAN_DEBUG("[] Incoming connection");
 
   /*auto linkService = make_unique<face::GenericLinkService>();
   auto transport = make_unique<face::DtnTransport>(std::move(m_socket));
