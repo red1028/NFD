@@ -131,10 +131,10 @@ DtnFactory::doCreateFace(const CreateFaceRequest& req,
 
   // very simple logic for now
   for (const auto& i : m_channels) {
-	//if (i.first == dtnAffix ) {
-	i.second->connect(dtnEndpoint, req.params, onCreated, onFailure);
-	return;
-    //}
+	if (i.first == dtnAffix ) {
+	  i.second->connect(dtnEndpoint, req.params, onCreated, onFailure);
+	  return;
+    }
   }
 
   NFD_LOG_TRACE("No channels available to connect to " << dtnEndpoint);
